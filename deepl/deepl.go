@@ -29,9 +29,11 @@ type Translated struct {
 func (c *Client) Translate(text string, targetLang string, sourceLang string) ([]string, error) {
 	params := url.Values{}
 	params.Add("auth_key", c.AuthKey)
-	params.Add("source_lang", sourceLang)
 	params.Add("target_lang", targetLang)
 	params.Add("text", text)
+	if sourceLang != "" {
+		params.Add("source_lang", sourceLang)
+	}
 	resp, err := http.PostForm(c.Endpoint, params)
 
 	if err := ValidateResponse(resp); err != nil {
