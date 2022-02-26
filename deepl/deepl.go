@@ -22,8 +22,8 @@ type Response struct {
 }
 
 type Translated struct {
-	DetectedSourceLaguage string `json:"detected_source_language"`
-	Text                  string `json:"text"`
+	DetectedSourceLanguage string `json:"detected_source_language"`
+	Text                   string `json:"text"`
 }
 
 func (c *Client) Translate(text string, targetLang string, sourceLang string) ([]string, error) {
