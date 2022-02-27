@@ -10,7 +10,7 @@ import (
 )
 
 type DeepL interface {
-	Translate(Text string, sourceLang string, targetLang string)
+	Translate(Text string, sourceLang string, targetLang string) ([]string, error)
 }
 
 const (
