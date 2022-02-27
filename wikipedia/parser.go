@@ -4,14 +4,12 @@ import (
 	"fmt"
 	md "github.com/JohannesKaufmann/html-to-markdown"
 	"github.com/PuerkitoBio/goquery"
-	"github.com/anaskhan96/soup"
+	"net/http"
 	"strings"
 )
 
-func Parse() (string, error) {
-	resp, err := soup.Get("https://en.wikipedia.org/wiki/Foundations_of_Geopolitics")
-	//resp, err := soup.Get("https://de.wikipedia.org/wiki/Grundlagen_der_Geopolitik")
-	//resp, err := soup.Get("https://en.wikipedia.org/wiki/Ukraine")
+func Parse(articleHtml string) (string, error) {
+	resp, err := http.Get("https://en.wikipedia.org/wiki/Ukraine")
 
 	if err != nil {
 		return "", err
@@ -48,28 +46,40 @@ func Parse() (string, error) {
 			},
 		},
 	)
-	doc := soup.HTMLParse(resp)
 
-	title := doc.Find("h1", "id", "firstHeading")
-	fmt.Println("# " + title.FullText() + "\n")
+	doc, err := goquery.NewDocumentFromReader(resp.Body)
+	if err != nil {
+		return "", err
+	}
+	title := doc.Find("h1#firstHeading")
+	fmt.Println("# " + title.Text() + "\n")
 
-	// Overview
-	mwp := doc.FindStrict("div", "class", "mw-parser-output")
-	mchd := mwp.Children()
+	articleStart := doc.Find("div.mw-parser-output").ChildrenFiltered("p,h2,ul")
+	articleStart.Each(func(i int, selection *goquery.Selection) {
+		html, err := goquery.OuterHtml(selection)
+		if err != nil {
+			panic(err)
+		}
 
-	for k := range mchd {
-		el := mchd[k]
+		markdown, err := mdConv.ConvertString(html)
+		if err != nil {
+			panic(err)
+		}
 
-		switch el.NodeValue {
-		case "p", "h2", "ul":
-			str, err := mdConv.ConvertString(el.HTML())
-			if err != nil {
-				panic(err)
+		if len(selection.Nodes) == 1 {
+			n := selection.Nodes[0]
+			if n.Data == "p" {
+				markdown = markdown + "\n\n"
 			}
 
-			fmt.Println(str + "\n")
+			if n.Data == "h2" {
+				markdown = markdown + "\n"
+			}
 		}
-	}
+
+		fmt.Print(markdown)
+
+	})
 
 	return "", nil
 
