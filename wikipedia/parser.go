@@ -1,20 +1,13 @@
 package wikipedia
 
 import (
-	"fmt"
 	md "github.com/JohannesKaufmann/html-to-markdown"
 	"github.com/PuerkitoBio/goquery"
-	"net/http"
+	"io"
 	"strings"
 )
 
-func Parse(articleHtml string) (string, error) {
-	resp, err := http.Get("https://en.wikipedia.org/wiki/Ukraine")
-
-	if err != nil {
-		return "", err
-	}
-
+func ParseArticle(html io.Reader) (string, error) {
 	mdConv := md.NewConverter("", true, nil)
 	mdConv.AddRules(
 		md.Rule{
@@ -47,40 +40,41 @@ func Parse(articleHtml string) (string, error) {
 		},
 	)
 
-	doc, err := goquery.NewDocumentFromReader(resp.Body)
+	var sb = strings.Builder{}
+	doc, err := goquery.NewDocumentFromReader(html)
 	if err != nil {
 		return "", err
 	}
 	title := doc.Find("h1#firstHeading")
-	fmt.Println("# " + title.Text() + "\n")
+	sb.WriteString("# " + title.Text() + "\n")
 
 	articleStart := doc.Find("div.mw-parser-output").ChildrenFiltered("p,h2,ul")
 	articleStart.Each(func(i int, selection *goquery.Selection) {
-		html, err := goquery.OuterHtml(selection)
+		h, err := goquery.OuterHtml(selection)
 		if err != nil {
 			panic(err)
 		}
 
-		markdown, err := mdConv.ConvertString(html)
+		markdown, err := mdConv.ConvertString(h)
 		if err != nil {
 			panic(err)
 		}
+
+		sb.WriteString(markdown)
 
 		if len(selection.Nodes) == 1 {
 			n := selection.Nodes[0]
 			if n.Data == "p" {
-				markdown = markdown + "\n\n"
+				sb.WriteString("\n\n")
 			}
 
 			if n.Data == "h2" {
-				markdown = markdown + "\n"
+				sb.WriteString("\n")
 			}
 		}
 
-		fmt.Print(markdown)
-
 	})
 
-	return "", nil
+	return sb.String(), nil
 
 }
