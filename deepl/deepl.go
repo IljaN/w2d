@@ -12,18 +12,16 @@ type DeepL interface {
 	Translate(Text string, sourceLang string, targetLang string)
 }
 
-type Client struct {
-	Endpoint string
-	AuthKey  string
-}
+const (
+	ProEndpoint  = "https://api.deepl.com/v2/translate"
+	FreeEndpoint = "https://api-free.deepl.com/v2/translate"
+)
 
-type Response struct {
-	Translations []Translated
-}
-
-type Translated struct {
-	DetectedSourceLanguage string `json:"detected_source_language"`
-	Text                   string `json:"text"`
+func NewClient(authKey string) *Client {
+	return &Client{
+		Endpoint: DetermineEndpoint(authKey),
+		AuthKey:  authKey,
+	}
 }
 
 func (c *Client) Translate(text string, targetLang string, sourceLang string) ([]string, error) {
@@ -97,9 +95,10 @@ func ParseResponse(resp *http.Response) (Response, error) {
 	return responseJson, err
 }
 
-func GetEndpoint(IsPro bool) string {
-	if IsPro {
-		return "https://api.deepl.com/v2/translate"
+func DetermineEndpoint(authKey string) string {
+	if strings.HasSuffix(authKey, ":fx") {
+		return FreeEndpoint
 	}
-	return "https://api-free.deepl.com/v2/translate"
+
+	return ProEndpoint
 }

@@ -148,3 +148,16 @@ func TestParseResponse(t *testing.T) {
 		}
 	}
 }
+
+func TestEndpointForAuthKey(t *testing.T) {
+	// Demo keys end with :fx
+	demoKey := "abcdefg-ewfwfew-weffew-few:fx"
+	if exp, got := FreeEndpoint, DetermineEndpoint(demoKey); exp != got {
+		t.Fatalf("Expected endpoint to be free (%s), got %s", exp, got)
+	}
+
+	proKey := "gwegewgwg-ewfewf-fewfewf-32242"
+	if exp, got := ProEndpoint, DetermineEndpoint(proKey); exp != got {
+		t.Fatalf("Expected endpoint to be free (%s), got %s", exp, got)
+	}
+}
