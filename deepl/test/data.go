@@ -14,7 +14,7 @@ const (
 
 type DataMap map[string]DataSet
 
-var DataSets = map[string]DataSet{
+var DataSets = DataMap{
 	DataSetShort: {"short_src.txt", "short_tgt.json"},
 	DataSetLong:  {"long_src.txt", "long_tgt.json"},
 }

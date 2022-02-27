@@ -149,6 +149,60 @@ func TestParseResponse(t *testing.T) {
 	}
 }
 
+// RoundTripFunc .
+type RoundTripFunc func(req *http.Request) *http.Response
+
+// RoundTrip .
+func (f RoundTripFunc) RoundTrip(req *http.Request) (*http.Response, error) {
+	return f(req), nil
+}
+
+//NewTestClient returns *http.Client with Transport replaced to avoid making real calls
+func NewTestClient(fn RoundTripFunc) *http.Client {
+	return &http.Client{
+		Transport: fn,
+	}
+}
+
+func TestTranslatePassesAllParams(t *testing.T) {
+	c := Client{
+		Endpoint: ProEndpoint,
+		AuthKey:  "abc",
+		client: NewTestClient(func(req *http.Request) *http.Response {
+			if req.URL.String() != ProEndpoint {
+				t.Fatalf("Url %s expected, got %s", ProEndpoint, req.URL.String())
+			}
+
+			_ = req.ParseForm()
+			expParams := map[string]string{
+				"auth_key":    "abc",
+				"target_lang": "ru",
+				"text":        "Hallo Welt!",
+			}
+
+			for k, v := range expParams {
+				if !req.Form.Has(k) {
+					t.Fatalf("Parameter %s missing but was expected", k)
+				}
+
+				if req.Form.Get(k) != v {
+					t.Fatalf("Parameter %s was expected to be %s, got %s", k, expParams[k], v)
+				}
+			}
+
+			return &http.Response{
+				StatusCode: 200,
+				Body:       ioutil.NopCloser(bytes.NewBufferString(`{}`)),
+				Header:     make(http.Header),
+			}
+
+		}),
+	}
+
+	_, _ = c.Translate("Hallo Welt!", "ru", "")
+
+}
+
 func TestEndpointForAuthKey(t *testing.T) {
 	// Demo keys end with :fx
 	demoKey := "abcdefg-ewfwfew-weffew-few:fx"
