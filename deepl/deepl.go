@@ -21,12 +21,14 @@ const (
 type Client struct {
 	Endpoint string
 	AuthKey  string
+	client   *http.Client
 }
 
 func NewClient(authKey string) *Client {
 	return &Client{
 		Endpoint: DetermineEndpoint(authKey),
 		AuthKey:  authKey,
+		client:   http.DefaultClient,
 	}
 }
 
@@ -45,7 +47,7 @@ func (c *Client) Translate(text string, targetLang string, sourceLang string) ([
 	if sourceLang != "" {
 		params.Add("source_lang", sourceLang)
 	}
-	resp, err := http.PostForm(c.Endpoint, params)
+	resp, err := c.client.PostForm(c.Endpoint, params)
 
 	if err := ValidateResponse(resp); err != nil {
 		return []string{}, err
