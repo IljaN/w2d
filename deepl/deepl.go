@@ -18,10 +18,22 @@ const (
 	FreeEndpoint = "https://api-free.deepl.com/v2/translate"
 )
 
+type Client struct {
+	Endpoint string
+	AuthKey  string
+}
+
 func NewClient(authKey string) *Client {
 	return &Client{
 		Endpoint: DetermineEndpoint(authKey),
 		AuthKey:  authKey,
+	}
+}
+
+type Response struct {
+	Translations []struct {
+		DetectedSourceLanguage string `json:"detected_source_language"`
+		Text                   string `json:"text"`
 	}
 }
 
