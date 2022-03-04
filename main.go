@@ -63,8 +63,17 @@ func main() {
 	}
 
 	markdown, err := parse(cfg, article)
-	translated, err := translate(cfg, markdown)
-	fmt.Println(translated)
+	if err != nil {
+		fmt.Printf("failed to parse: %s", err)
+		os.Exit(2)
+	}
 
+	translated, err := translate(cfg, markdown)
+	if err != nil {
+		fmt.Printf("failed to translate: %s", err)
+		os.Exit(2)
+	}
+
+	fmt.Println(translated)
 	os.Exit(0)
 }
