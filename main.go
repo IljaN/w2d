@@ -14,6 +14,7 @@ import (
 type Config struct {
 	Article      string `arg:"required,positional"`
 	TargetLang   string `arg:"-l,--" help:"target language for translation"`
+	ParseOnly    bool   `arg:"-p,--" default:"false" help:"parse to markdown without translating"`
 	DeeplAuthKey string `arg:"required,--,env:DEEPL_AUTH_KEY"`
 }
 
@@ -68,12 +69,17 @@ func main() {
 		os.Exit(2)
 	}
 
+	if cfg.ParseOnly {
+		fmt.Print(markdown)
+		os.Exit(0)
+	}
+
 	translated, err := translate(cfg, markdown)
 	if err != nil {
 		fmt.Printf("failed to translate: %s", err)
 		os.Exit(2)
 	}
 
-	fmt.Println(translated)
+	fmt.Print(translated)
 	os.Exit(0)
 }
