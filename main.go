@@ -5,6 +5,7 @@ import (
 	"github.com/IljaN/w2d/deepl"
 	"github.com/IljaN/w2d/wikipedia"
 	"github.com/alexflint/go-arg"
+	"io"
 	"net/http"
 	"os"
 	"strings"
@@ -24,14 +25,17 @@ func loadConfig() *Config {
 	return &c
 }
 
-func fetchArticle(cfg *Config) (text string, err error) {
+func fetch(cfg *Config) (io.Reader, error) {
 	resp, err := http.Get(cfg.Article)
 	if err != nil {
-		resp.Body.Close()
-		return "", err
+		return nil, err
 	}
 
-	return wikipedia.ParseArticle(resp.Body)
+	return resp.Body, err
+}
+
+func parse(cfg *Config, article io.Reader) (text string, err error) {
+	return wikipedia.NewArticleParser().Parse(article)
 }
 
 func translate(cfg *Config, text string) (string, error) {
@@ -52,15 +56,15 @@ func translate(cfg *Config, text string) (string, error) {
 
 func main() {
 	cfg := loadConfig()
-	txt, err := fetchArticle(cfg)
+	article, err := fetch(cfg)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
 
-	translated, err := translate(cfg, txt)
+	markdown, err := parse(cfg, article)
+	translated, err := translate(cfg, markdown)
 	fmt.Println(translated)
 
 	os.Exit(0)
-
 }
