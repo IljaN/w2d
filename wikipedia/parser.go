@@ -3,6 +3,7 @@ package wikipedia
 import (
 	md "github.com/JohannesKaufmann/html-to-markdown"
 	"github.com/PuerkitoBio/goquery"
+	"golang.org/x/net/html"
 	"io"
 	"regexp"
 	"strings"
@@ -30,8 +31,12 @@ func (p *articleParser) Parse(html io.Reader) (string, error) {
 	title := doc.Find("h1#firstHeading")
 	sb.WriteString("# " + title.Text() + "\n\n")
 
-	articleStart := doc.Find("div.mw-parser-output").ChildrenFiltered("p,h2,ul")
+	articleStart := doc.Find("div.mw-parser-output").ChildrenFiltered("h2,p,ul")
 	articleStart.EachWithBreak(func(i int, selection *goquery.Selection) bool {
+
+		if isEmptyHeading(i, articleStart.Nodes) {
+			return true
+		}
 
 		var h = ""
 		h, err = goquery.OuterHtml(selection)
@@ -53,9 +58,25 @@ func (p *articleParser) Parse(html io.Reader) (string, error) {
 
 }
 
+// isEmptyHeading returns true if the current and next node in nodes relative to curIdx is a heading
+func isEmptyHeading(curIdx int, nodes []*html.Node) bool {
+	isLast, next := curIdx == len(nodes)-1, curIdx+1
+
+	if !isLast && nodes[curIdx].Data == "h2" && nodes[next].Data == "h2" {
+		return true
+	}
+
+	if isLast && nodes[curIdx].Data == "h2" {
+		return true
+	}
+
+	return false
+}
+
 // Reduce many newline characters `\n` to at most 2 new line characters.
 var multipleNewLinesRegex = regexp.MustCompile(`[\n]{2,}`)
 
+// afterHook Remove superfluous whitespace
 func afterHook(markdown string) string {
 	markdown = strings.TrimLeft(markdown, "\n")
 	return multipleNewLinesRegex.ReplaceAllString(markdown, "\n\n")
