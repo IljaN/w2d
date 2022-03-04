@@ -4,6 +4,7 @@ import (
 	md "github.com/JohannesKaufmann/html-to-markdown"
 	"github.com/PuerkitoBio/goquery"
 	"io"
+	"regexp"
 	"strings"
 )
 
@@ -11,7 +12,8 @@ func NewArticleParser() *articleParser {
 	return &articleParser{
 		md: md.NewConverter("", true, nil).
 			AddRules(linkRemover, editBoxRemover, newLineFixer).
-			ClearAfter(),
+			ClearAfter().
+			After(afterHook),
 	}
 }
 
@@ -46,6 +48,14 @@ func (p *articleParser) Parse(html io.Reader) (string, error) {
 
 	return sb.String(), nil
 
+}
+
+// Reduce many newline characters `\n` to at most 2 new line characters.
+var multipleNewLinesRegex = regexp.MustCompile(`[\n]{2,}`)
+
+func afterHook(markdown string) string {
+	markdown = strings.TrimLeft(markdown, "\n")
+	return multipleNewLinesRegex.ReplaceAllString(markdown, "\n\n")
 }
 
 var (
