@@ -31,22 +31,25 @@ func (p *articleParser) Parse(html io.Reader) (string, error) {
 	sb.WriteString("# " + title.Text() + "\n\n")
 
 	articleStart := doc.Find("div.mw-parser-output").ChildrenFiltered("p,h2,ul")
-	articleStart.Each(func(i int, selection *goquery.Selection) {
-		h, err := goquery.OuterHtml(selection)
+	articleStart.EachWithBreak(func(i int, selection *goquery.Selection) bool {
+
+		var h = ""
+		h, err = goquery.OuterHtml(selection)
 		if err != nil {
-			panic(err)
+			return false
 		}
 
-		markdown, err := p.md.ConvertString(h)
+		var markdown = ""
+		markdown, err = p.md.ConvertString(h)
 		if err != nil {
-			panic(err)
+			return false
 		}
 
 		sb.WriteString(markdown)
-
+		return true
 	})
 
-	return sb.String(), nil
+	return sb.String(), err
 
 }
 
