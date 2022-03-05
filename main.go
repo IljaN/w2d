@@ -10,6 +10,42 @@ import (
 	"os"
 )
 
+type Config struct {
+	Translate    *translateCmd `arg:"subcommand:translate" help:"translates a wikipedia article"`
+	ListLangs    *listLangsCmd `arg:"subcommand:list-languages" help:"retrieve a list of supported languages"`
+	DeeplAuthKey string        `arg:"required,-k,--,env:W2D_DEEPL_AUTH_KEY"`
+}
+
+type translateCmd struct {
+	Article    string `arg:"positional,required" help:"full url to the article which should be translated"`
+	TargetLang string `arg:"-t,--" default:"en" help:"target language for translation"`
+	SourceLang string `arg:"-s,--" default:"" help:"source language, leave empty for autodetect"`
+	ParseOnly  bool   `arg:"-p,--" default:"false" help:"parse to markdown without translating"`
+	authKey    string
+}
+
+type listLangsCmd struct {
+	Type    string `arg:"-t,--" default:"source" help:"Which type of languages to return (source or target)"`
+	authKey string
+}
+
+// w2d - translates wikipedia articles using DeepL api and renders them to markdown.
+func main() {
+	c := Config{}
+	arg.MustParse(&c)
+	switch {
+	case c.ListLangs != nil:
+		c.ListLangs.authKey = c.DeeplAuthKey
+		listLanguages(c.ListLangs)
+	case c.Translate != nil:
+		c.Translate.authKey = c.DeeplAuthKey
+		translate(c.Translate)
+	}
+
+	os.Exit(0)
+}
+
+// translate fetches an article from wikipedia, parses to markdown and translates it using DeepL
 func translate(cfg *translateCmd) {
 	article, err := fetch(cfg)
 	if err != nil {
@@ -39,6 +75,7 @@ func translate(cfg *translateCmd) {
 
 }
 
+// fetch downloads html from a given url
 func fetch(cfg *translateCmd) (io.Reader, error) {
 	resp, err := http.Get(cfg.Article)
 	if err != nil {
@@ -48,10 +85,12 @@ func fetch(cfg *translateCmd) (io.Reader, error) {
 	return resp.Body, err
 }
 
+// parse converts article to markdown
 func parse(cfg *translateCmd, article io.Reader) (text string, err error) {
 	return wikipedia.NewArticleParser().Parse(article)
 }
 
+// translateArticle translates text using DeepL API
 func translateArticle(cfg *translateCmd, text string) (string, error) {
 	dc := deepl.NewClient(cfg.authKey)
 	translatedSentences, err := dc.Translate(text, cfg.TargetLang, "")
@@ -68,6 +107,7 @@ func translateArticle(cfg *translateCmd, text string) (string, error) {
 
 }
 
+// listLanguages retrieves languages supported by DeepL
 func listLanguages(cfg *listLangsCmd) {
 	dc := deepl.NewClient(cfg.authKey)
 	if cfg.Type != "source" && cfg.Type != "target" {
@@ -86,45 +126,4 @@ func listLanguages(cfg *listLangsCmd) {
 	}
 
 	os.Exit(0)
-}
-
-func loadConfig() *Config {
-	c := Config{}
-	arg.MustParse(&c)
-	return &c
-}
-
-func main() {
-	c := loadConfig()
-	if c.ListLangs != nil {
-		c.ListLangs.authKey = c.DeeplAuthKey
-		listLanguages(c.ListLangs)
-		os.Exit(0)
-	}
-
-	c.Translate.authKey = c.DeeplAuthKey
-	translate(c.Translate)
-}
-
-type Config struct {
-	Translate    *translateCmd `arg:"subcommand:translate" help:"translates a wikipedia article"`
-	ListLangs    *listLangsCmd `arg:"subcommand:list-languages" help:"retrieve a list of supported languages"`
-	DeeplAuthKey string        `arg:"required,-k,--,env:W2D_DEEPL_AUTH_KEY"`
-}
-
-type translateCmd struct {
-	Article    string `arg:"positional,required" help:"full url to the article which should be translated"`
-	TargetLang string `arg:"-t,--" default:"en" help:"target language for translation"`
-	SourceLang string `arg:"-s,--" default:"" help:"source language, leave empty for autodetect"`
-	ParseOnly  bool   `arg:"-p,--" default:"false" help:"parse to markdown without translating"`
-	authKey    string
-}
-
-type listLangsCmd struct {
-	Type    string `arg:"-t,--" default:"source" help:"Which type of languages to return (source or target)"`
-	authKey string
-}
-
-type AuthKey struct {
-	DeeplAuthKey string `arg:"required,-k,--,env:W2D_DEEPL_AUTH_KEY"`
 }
