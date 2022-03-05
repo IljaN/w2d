@@ -16,6 +16,10 @@ type Config struct {
 	DeeplAuthKey string        `arg:"required,-k,--,env:W2D_DEEPL_AUTH_KEY"`
 }
 
+func (Config) Description() string {
+	return "Converts a wikipedia article to markdown and translates it using the DeepL.com api.\n"
+}
+
 type translateCmd struct {
 	Article    string `arg:"positional,required" help:"full url to the article which should be translated"`
 	TargetLang string `arg:"-t,--" default:"en" help:"target language for translation"`
