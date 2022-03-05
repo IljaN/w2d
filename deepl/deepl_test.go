@@ -108,7 +108,7 @@ func TestParseResponse(t *testing.T) {
 			t.Fatal("Error within json.Marshal")
 		}
 		baseResponse.Body = ioutil.NopCloser(bytes.NewBuffer(b))
-		res, err := ParseResponse(&baseResponse)
+		res, err := ParseTranslateResponse(&baseResponse)
 		if err != nil {
 			t.Fatalf("If input is valid, should not occur error\n%s", err.Error())
 		}
@@ -133,7 +133,7 @@ func TestParseResponse(t *testing.T) {
 			t.Fatal("Error within json.Marshal")
 		}
 		baseResponse.Body = ioutil.NopCloser(bytes.NewBuffer(b))
-		res, err := ParseResponse(&baseResponse)
+		res, err := ParseTranslateResponse(&baseResponse)
 		if err != nil {
 			t.Fatalf("If input is valid, should not occur error\n%s", err.Error())
 		}
@@ -169,8 +169,8 @@ func TestTranslatePassesAllParams(t *testing.T) {
 		Endpoint: ProEndpoint,
 		AuthKey:  "abc",
 		client: NewTestClient(func(req *http.Request) *http.Response {
-			if req.URL.String() != ProEndpoint {
-				t.Fatalf("Url %s expected, got %s", ProEndpoint, req.URL.String())
+			if req.URL.String() != ProEndpoint+"translate" {
+				t.Fatalf("Url %s expected, got %s", ProEndpoint+"translate", req.URL.String())
 			}
 
 			_ = req.ParseForm()

@@ -34,7 +34,7 @@ func (ds *DataSet) GetOutJson(t *testing.T) string {
 	return string(readOrFail(t, ds.outJson))
 }
 func (ds *DataSet) GetOutTxt(t *testing.T) string {
-	r := deepl.Response{}
+	r := deepl.TranslateResponse{}
 	if err := json.Unmarshal(readOrFail(t, ds.outJson), &r); err != nil {
 		t.Fatalf("Failed to unmarshall json: %s", ds.outJson)
 	}

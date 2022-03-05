@@ -14,8 +14,8 @@ type DeepL interface {
 }
 
 const (
-	ProEndpoint  = "https://api.deepl.com/v2/translate"
-	FreeEndpoint = "https://api-free.deepl.com/v2/translate"
+	ProEndpoint  = "https://api.deepl.com/v2/"
+	FreeEndpoint = "https://api-free.deepl.com/v2/"
 )
 
 type Client struct {
@@ -32,7 +32,7 @@ func NewClient(authKey string) *Client {
 	}
 }
 
-type Response struct {
+type TranslateResponse struct {
 	Translations []struct {
 		DetectedSourceLanguage string `json:"detected_source_language"`
 		Text                   string `json:"text"`
@@ -47,12 +47,14 @@ func (c *Client) Translate(text string, targetLang string, sourceLang string) ([
 	if sourceLang != "" {
 		params.Add("source_lang", sourceLang)
 	}
-	resp, err := c.client.PostForm(c.Endpoint, params)
+
+	ep := c.Endpoint + "translate"
+	resp, err := c.client.PostForm(ep, params)
 
 	if err := ValidateResponse(resp); err != nil {
 		return []string{}, err
 	}
-	parsed, err := ParseResponse(resp)
+	parsed, err := ParseTranslateResponse(resp)
 	if err != nil {
 		return []string{}, err
 	}
@@ -61,6 +63,45 @@ func (c *Client) Translate(text string, targetLang string, sourceLang string) ([
 		r = append(r, translated.Text)
 	}
 	return r, nil
+}
+
+type SupportedLanguageResponse []SupportedLanguage
+
+type SupportedLanguage struct {
+	Language          string `json:"language"`
+	Name              string `json:"name"`
+	SupportsFormality bool   `json:"supports_formality"`
+}
+
+// GetSupportedLanguages returns the list of supported source languages if target is set to false. Otherwise,
+// the supported target languages are returned.
+func (c *Client) GetSupportedLanguages(target bool) (map[string]SupportedLanguage, error) {
+	ep := c.Endpoint + "languages"
+	params := url.Values{}
+	params.Add("auth_key", c.AuthKey)
+
+	if target {
+		params.Add("target", "target")
+	}
+
+	resp, err := c.client.PostForm(ep, params)
+
+	if err := ValidateResponse(resp); err != nil {
+		return nil, err
+	}
+
+	parsed, err := ParseLanguagesResponse(resp)
+	if err != nil {
+		return nil, err
+	}
+
+	supportedLangs := make(map[string]SupportedLanguage, len(parsed))
+
+	for k := range parsed {
+		supportedLangs[parsed[k].Language] = parsed[k]
+	}
+
+	return supportedLangs, nil
 }
 
 var KnownErrors = map[int]string{
@@ -94,8 +135,24 @@ func ValidateResponse(resp *http.Response) error {
 	return nil
 }
 
-func ParseResponse(resp *http.Response) (Response, error) {
-	var responseJson Response
+func ParseLanguagesResponse(resp *http.Response) (SupportedLanguageResponse, error) {
+	var responseJson SupportedLanguageResponse
+	body, err := ioutil.ReadAll(resp.Body)
+
+	if err != nil {
+		err := fmt.Errorf("%s (occurred while parse response)", err.Error())
+		return responseJson, err
+	}
+	err = json.Unmarshal(body, &responseJson)
+	if err != nil {
+		err := fmt.Errorf("%s (occurred while parse response)", err.Error())
+		return responseJson, err
+	}
+	return responseJson, err
+}
+
+func ParseTranslateResponse(resp *http.Response) (TranslateResponse, error) {
+	var responseJson TranslateResponse
 	body, err := ioutil.ReadAll(resp.Body)
 
 	if err != nil {
