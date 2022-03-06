@@ -50,7 +50,7 @@ func (a *Source) UnmarshalText(text []byte) error {
 	return nil
 }
 
-func (a *Source) Reader() (io.Reader, error) {
+func (a *Source) Reader() (io.ReadCloser, error) {
 	if a.StdIn {
 		return os.Stdin, nil
 	}
