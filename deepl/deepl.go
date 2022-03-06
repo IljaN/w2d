@@ -39,6 +39,23 @@ type TranslateResponse struct {
 	}
 }
 
+// TranslateToString is a helper which calls Translate and concatenates the result in to a single string
+func (c *Client) TranslateToString(text string, targetLang string, sourceLang string) (string, error) {
+	s, err := c.Translate(text, targetLang, sourceLang)
+	if err != nil {
+		return "", err
+	}
+
+	sb := strings.Builder{}
+	sb.Grow(2028)
+
+	for k := range s {
+		sb.WriteString(s[k])
+	}
+
+	return sb.String(), nil
+}
+
 func (c *Client) Translate(text string, targetLang string, sourceLang string) ([]string, error) {
 	params := url.Values{}
 	params.Add("auth_key", c.AuthKey)

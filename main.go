@@ -71,7 +71,7 @@ func translate(cfg *translateCmd) {
 		os.Exit(0)
 	}
 
-	translated, err := translateArticle(cfg, markdown)
+	translated, err := deepl.NewClient(cfg.authKey).TranslateToString(markdown, cfg.TargetLang, cfg.SourceLang)
 	if err != nil {
 		fmt.Printf("failed to translateArticle: %s", err)
 		os.Exit(2)
@@ -79,24 +79,6 @@ func translate(cfg *translateCmd) {
 
 	fmt.Print(translated)
 	os.Exit(0)
-
-}
-
-// translateArticle translates text using DeepL API
-func translateArticle(cfg *translateCmd, text string) (string, error) {
-	dc := deepl.NewClient(cfg.authKey)
-	translatedSentences, err := dc.Translate(text, cfg.TargetLang, "")
-	if err != nil {
-		return "", err
-	}
-
-	translatedText := ""
-	for numSentence := range translatedSentences {
-		translatedText = translatedText + translatedSentences[numSentence]
-	}
-
-	return translatedText, err
-
 }
 
 // listLanguages retrieves languages supported by DeepL
@@ -105,7 +87,6 @@ func listLanguages(cfg *listLangsCmd) {
 	if cfg.Type != "source" && cfg.Type != "target" {
 		fmt.Printf("invalid target: %s\n", cfg.Type)
 		os.Exit(1)
-
 	}
 
 	langs, err := dc.GetSupportedLanguages(cfg.Type != "source")
