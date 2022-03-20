@@ -26,8 +26,8 @@ type authKey struct {
 }
 
 type translateCmd struct {
+	TargetLang string `arg:"positional,required" help:"target language for translation"`
 	Article    string `arg:"positional" default:"" help:"full url to the article which should be translated. This arg is ignored if the article HTML is provided via STDIN"`
-	TargetLang string `arg:"-t,--" default:"en" help:"target language for translation"`
 	SourceLang string `arg:"-s,--" default:"" help:"source language, leave empty for autodetect"`
 
 	authKey
