@@ -13,6 +13,7 @@ import (
 
 type Config struct {
 	Translate *translateCmd `arg:"subcommand:translate" help:"translates a wikipedia article"`
+	Markdown  *markdownCmd  `arg:"subcommand:markdown" help:"converts wikipedia article html to markdown"`
 	ListLangs *listLangsCmd `arg:"subcommand:list-languages" help:"retrieve a list of supported languages"`
 }
 
@@ -24,8 +25,12 @@ type translateCmd struct {
 	Article    string `arg:"positional" default:"" help:"full url to the article which should be translated. This arg is ignored if the article HTML is provided via STDIN"`
 	TargetLang string `arg:"-t,--" default:"en" help:"target language for translation"`
 	SourceLang string `arg:"-s,--" default:"" help:"source language, leave empty for autodetect"`
-	ParseOnly  bool   `arg:"-p,--" default:"false" help:"parse to markdown without translating"`
+
 	authKey
+}
+
+type markdownCmd struct {
+	Article string `arg:"positional" default:"" help:"full url to the article which should be converted. This arg is ignored if the article HTML is provided via STDIN"`
 }
 
 type listLangsCmd struct {
@@ -43,8 +48,6 @@ func main() {
 	p := arg.MustParse(&c)
 
 	switch {
-	case c.ListLangs != nil:
-		listLanguages(c.ListLangs)
 	case c.Translate != nil:
 		if !stdInAttached() && c.Translate.Article == "" {
 			err := p.FailSubcommand("article missing: Please provide the html via STDIN or pass the article URL as argument.", "translate")
@@ -54,6 +57,18 @@ func main() {
 			}
 		}
 		translate(c.Translate)
+	case c.Markdown != nil:
+		if !stdInAttached() && c.Markdown.Article == "" {
+			err := p.FailSubcommand("article missing: Please provide the html via STDIN or pass the article URL as argument.", "markdown")
+			if err != nil {
+				fmt.Println(err)
+				os.Exit(1)
+			}
+		}
+
+		convertToMarkdown(c.Markdown)
+	case c.ListLangs != nil:
+		listLanguages(c.ListLangs)
 	}
 
 	os.Exit(0)
@@ -73,11 +88,6 @@ func translate(cfg *translateCmd) {
 		os.Exit(2)
 	}
 
-	if cfg.ParseOnly {
-		fmt.Print(markdown)
-		os.Exit(0)
-	}
-
 	translated, err := deepl.NewClient(cfg.DeeplAuthKey).TranslateToString(markdown, cfg.TargetLang, cfg.SourceLang)
 	if err != nil {
 		fmt.Printf("failed to translateArticle: %s", err)
@@ -86,6 +96,22 @@ func translate(cfg *translateCmd) {
 
 	fmt.Print(translated)
 	os.Exit(0)
+}
+
+func convertToMarkdown(cfg *markdownCmd) {
+	html, err := openArticle(cfg.Article)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
+	markdown, err := wikipedia.NewArticleParser().Parse(html)
+	if err != nil {
+		fmt.Printf("failed to parse: %s", err)
+		os.Exit(2)
+	}
+
+	fmt.Print(markdown)
 }
 
 // listLanguages retrieves languages supported by DeepL
