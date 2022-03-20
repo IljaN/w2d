@@ -5,6 +5,9 @@ import (
 	"github.com/IljaN/w2d/deepl"
 	"github.com/IljaN/w2d/wikipedia"
 	"github.com/alexflint/go-arg"
+	"io"
+	"net/http"
+	"net/url"
 	"os"
 )
 
@@ -18,7 +21,7 @@ func (Config) Description() string {
 }
 
 type translateCmd struct {
-	Article    Source `arg:"positional" default:"-" help:"full url to the article which should be translated"`
+	Article    string `arg:"positional" default:"" help:"full url to the article which should be translated. This arg is ignored if the article HTML is provided via STDIN"`
 	TargetLang string `arg:"-t,--" default:"en" help:"target language for translation"`
 	SourceLang string `arg:"-s,--" default:"" help:"source language, leave empty for autodetect"`
 	ParseOnly  bool   `arg:"-p,--" default:"false" help:"parse to markdown without translating"`
@@ -43,9 +46,12 @@ func main() {
 	case c.ListLangs != nil:
 		listLanguages(c.ListLangs)
 	case c.Translate != nil:
-		if !c.Translate.Article.StdIn && !c.Translate.Article.IsUrl {
-			p.Fail("article is required")
-
+		if !stdInAttached() && c.Translate.Article == "" {
+			err := p.FailSubcommand("article missing: Please provide the html via STDIN or pass the article URL as argument.", "translate")
+			if err != nil {
+				fmt.Println(err)
+				os.Exit(1)
+			}
 		}
 		translate(c.Translate)
 	}
@@ -55,13 +61,13 @@ func main() {
 
 // translate fetches an article from wikipedia, parses to markdown and translates it using DeepL
 func translate(cfg *translateCmd) {
-	article, err := cfg.Article.Reader()
+	html, err := openArticle(cfg.Article)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
 
-	markdown, err := wikipedia.NewArticleParser().Parse(article)
+	markdown, err := wikipedia.NewArticleParser().Parse(html)
 	if err != nil {
 		fmt.Printf("failed to parse: %s", err)
 		os.Exit(2)
@@ -100,4 +106,28 @@ func listLanguages(cfg *listLangsCmd) {
 	}
 
 	os.Exit(0)
+}
+
+// openArticle returns a reader for an article at srcUrl. If STDIN is attached srcUrl is ignored.
+func openArticle(srcURL string) (io.ReadCloser, error) {
+	if stdInAttached() {
+		return os.Stdin, nil
+	}
+
+	u, err := url.ParseRequestURI(srcURL)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := http.Get(u.String())
+	if err != nil {
+		return nil, err
+	}
+
+	return resp.Body, nil
+}
+
+func stdInAttached() bool {
+	stat, _ := os.Stdin.Stat()
+	return (stat.Mode() & os.ModeCharDevice) == 0
 }
