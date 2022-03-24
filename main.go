@@ -13,9 +13,9 @@ import (
 )
 
 type rootArgs struct {
-	Translate     *translateCmd     `arg:"subcommand:translate" help:"translates a wikipedia article"`
-	Markdown      *markdownCmd      `arg:"subcommand:markdown" help:"converts wikipedia article html to markdown"`
-	ListLanguages *listLanguagesCmd `arg:"subcommand:list-languages" help:"retrieve a list of supported languages"`
+	Translate     *translateArgs     `arg:"subcommand:translate" help:"translates a wikipedia article"`
+	Markdown      *markdownArgs      `arg:"subcommand:markdown" help:"converts wikipedia article html to markdown"`
+	ListLanguages *listLanguagesArgs `arg:"subcommand:list-languages" help:"retrieve a list of supported languages"`
 }
 
 func (rootArgs) Description() string {
@@ -26,16 +26,16 @@ type authKey struct {
 	DeeplAuthKey string `arg:"required,-k,--,env:W2D_DEEPL_AUTH_KEY"`
 }
 
-type translateCmd struct {
+type translateArgs struct {
 	TargetLang string `arg:"positional,required" help:"target language for translation"`
-	Article    string `arg:"positional" default:"" help:"full url to the article which should be translated. This arg is ignored if the article HTML is provided via STDIN"`
+	Article    string `arg:"positional,required" help:"full url to the article or '-' for STDIN"`
 	SourceLang string `arg:"-s,--" default:"" help:"source language, leave empty for autodetect"`
 
 	authKey
 }
 
-// translate fetches an article from wikipedia, parses to markdown and translates it using DeepL
-func (c *translateCmd) run() (string, error) {
+// translateCmd fetches an article from wikipedia, parses to markdown and translates it using DeepL
+func translateCmd(c *translateArgs) (string, error) {
 	html, err := openArticle(c.Article)
 	if err != nil {
 		return "", err
@@ -54,11 +54,12 @@ func (c *translateCmd) run() (string, error) {
 	return translated, nil
 }
 
-type markdownCmd struct {
-	Article string `arg:"positional" default:"" help:"full url to the article which should be converted. This arg is ignored if the article HTML is provided via STDIN"`
+type markdownArgs struct {
+	Article string `arg:"positional" default:"" help:"full url to the article or '-' for STDIN"`
 }
 
-func (c *markdownCmd) run() (string, error) {
+// markdownCmd fetches an article from wikipedia and converts it to markdown
+func markdownCmd(c *markdownArgs) (string, error) {
 	html, err := openArticle(c.Article)
 	if err != nil {
 		return "", err
@@ -72,13 +73,13 @@ func (c *markdownCmd) run() (string, error) {
 	return markdown, nil
 }
 
-type listLanguagesCmd struct {
+type listLanguagesArgs struct {
 	Type string `arg:"-t,--" default:"source" help:"Which type of languages to return (source or target)"`
 	authKey
 }
 
-// listLanguages retrieves languages supported by DeepL
-func (c *listLanguagesCmd) run() (string, error) {
+// listLanguagesCmd retrieves languages supported by the DeepL API
+func listLanguagesCmd(c *listLanguagesArgs) (string, error) {
 	dc := deepl.NewClient(c.DeeplAuthKey)
 	if c.Type != "source" && c.Type != "target" {
 		return "", fmt.Errorf("invalid target: %s\n", c.Type)
@@ -100,29 +101,26 @@ func (c *listLanguagesCmd) run() (string, error) {
 
 // w2d - translates wikipedia articles using DeepL api and renders them to markdown.
 func main() {
-	cmd := rootArgs{}
-	p := arg.MustParse(&cmd)
 	var out string
+	var cmdName string
 	var err error
+	args := rootArgs{}
+	p := arg.MustParse(&args)
 
 	switch {
-	case cmd.Translate != nil:
-		if !stdInAttached() && cmd.Translate.Article == "" {
-			err = p.FailSubcommand("article missing: Please provide the html via STDIN or pass the article URL as argument.", "translate")
-		}
-		out, err = cmd.Translate.run()
-	case cmd.Markdown != nil:
-		if !stdInAttached() && cmd.Markdown.Article == "" {
-			err = p.FailSubcommand("article missing: Please provide the html via STDIN or pass the article URL as argument.", "markdown")
-		}
-
-		out, err = cmd.Markdown.run()
-	case cmd.ListLanguages != nil:
-		out, err = cmd.ListLanguages.run()
+	case args.Translate != nil:
+		cmdName = "translate"
+		out, err = translateCmd(args.Translate)
+	case args.Markdown != nil:
+		cmdName = "markdown"
+		out, err = markdownCmd(args.Markdown)
+	case args.ListLanguages != nil:
+		cmdName = "list-languages"
+		out, err = listLanguagesCmd(args.ListLanguages)
 	}
 
 	if err != nil {
-		fmt.Println(err)
+		_ = p.FailSubcommand(err.Error(), cmdName)
 		os.Exit(1)
 	}
 
@@ -131,12 +129,12 @@ func main() {
 }
 
 // openArticle returns a reader for an article at srcUrl. If STDIN is attached srcUrl is ignored.
-func openArticle(srcURL string) (io.ReadCloser, error) {
-	if stdInAttached() {
+func openArticle(src string) (io.ReadCloser, error) {
+	if stdInAttached() && src == "-" {
 		return os.Stdin, nil
 	}
 
-	u, err := url.ParseRequestURI(srcURL)
+	u, err := url.ParseRequestURI(src)
 	if err != nil {
 		return nil, err
 	}
@@ -149,6 +147,7 @@ func openArticle(srcURL string) (io.ReadCloser, error) {
 	return resp.Body, nil
 }
 
+// stdInAttached returns true if stdin is connected
 func stdInAttached() bool {
 	stat, _ := os.Stdin.Stat()
 	return (stat.Mode() & os.ModeCharDevice) == 0
