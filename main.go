@@ -12,9 +12,9 @@ import (
 )
 
 type rootArgs struct {
-	Translate *translateCmd `arg:"subcommand:translate" help:"translates a wikipedia article"`
-	Markdown  *markdownCmd  `arg:"subcommand:markdown" help:"converts wikipedia article html to markdown"`
-	ListLangs *listLangsCmd `arg:"subcommand:list-languages" help:"retrieve a list of supported languages"`
+	Translate     *translateCmd     `arg:"subcommand:translate" help:"translates a wikipedia article"`
+	Markdown      *markdownCmd      `arg:"subcommand:markdown" help:"converts wikipedia article html to markdown"`
+	ListLanguages *listLanguagesCmd `arg:"subcommand:list-languages" help:"retrieve a list of supported languages"`
 }
 
 func (rootArgs) Description() string {
@@ -77,13 +77,13 @@ func (c *markdownCmd) run() {
 	fmt.Print(markdown)
 }
 
-type listLangsCmd struct {
+type listLanguagesCmd struct {
 	Type string `arg:"-t,--" default:"source" help:"Which type of languages to return (source or target)"`
 	authKey
 }
 
 // listLanguages retrieves languages supported by DeepL
-func (c *listLangsCmd) run() {
+func (c *listLanguagesCmd) run() {
 	dc := deepl.NewClient(c.DeeplAuthKey)
 	if c.Type != "source" && c.Type != "target" {
 		fmt.Printf("invalid target: %s\n", c.Type)
@@ -127,8 +127,8 @@ func main() {
 		}
 
 		cmd.Markdown.run()
-	case cmd.ListLangs != nil:
-		cmd.ListLangs.run()
+	case cmd.ListLanguages != nil:
+		cmd.ListLanguages.run()
 	}
 
 	os.Exit(0)
