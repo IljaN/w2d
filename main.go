@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"sort"
 	"strings"
 )
 
@@ -85,9 +86,16 @@ func newListLanguagesCmd(deepl deepl.Client) func(langType string) (string, erro
 			return "", err
 		}
 
+		keys := make([]string, 0, len(langs))
+		for k := range langs {
+			keys = append(keys, k)
+		}
+
+		sort.Strings(keys)
+
 		res := strings.Builder{}
-		for lc := range langs {
-			res.WriteString(fmt.Sprintf("%s - %s (formality_support: %t)\n", lc, langs[lc].Name, langs[lc].SupportsFormality))
+		for _, k := range keys {
+			res.WriteString(fmt.Sprintf("%s - %s (formality_support: %t)\n", k, langs[k].Name, langs[k].SupportsFormality))
 		}
 
 		return res.String(), nil
