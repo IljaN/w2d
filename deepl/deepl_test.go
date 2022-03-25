@@ -165,7 +165,7 @@ func NewTestClient(fn RoundTripFunc) *http.Client {
 }
 
 func TestTranslatePassesAllParams(t *testing.T) {
-	c := Client{
+	c := client{
 		Endpoint: ProEndpoint,
 		AuthKey:  "abc",
 		client: NewTestClient(func(req *http.Request) *http.Response {

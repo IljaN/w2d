@@ -9,8 +9,8 @@ import (
 	"strings"
 )
 
-func NewArticleParser() *articleParser {
-	return &articleParser{
+func NewArticleParser() *ArticleParser {
+	return &ArticleParser{
 		md: md.NewConverter("", true, nil).
 			AddRules(linkRemover, editBoxRemover, newLineFixer).
 			ClearAfter().
@@ -18,7 +18,7 @@ func NewArticleParser() *articleParser {
 	}
 }
 
-func (p *articleParser) Parse(html io.ReadCloser) (string, error) {
+func (p *ArticleParser) Parse(html io.ReadCloser) (string, error) {
 	var sb = strings.Builder{}
 	var doc *goquery.Document
 	var err error
@@ -132,6 +132,6 @@ var (
 		}}
 )
 
-type articleParser struct {
+type ArticleParser struct {
 	md *md.Converter
 }

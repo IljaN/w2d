@@ -9,8 +9,10 @@ import (
 	"strings"
 )
 
-type DeepL interface {
-	Translate(Text string, sourceLang string, targetLang string) ([]string, error)
+type Client interface {
+	Translate(text string, sourceLang string, targetLang string) ([]string, error)
+	TranslateToString(text, targetLang, sourceLang string) (string, error)
+	GetSupportedLanguages(target bool) (map[string]SupportedLanguage, error)
 }
 
 const (
@@ -18,14 +20,14 @@ const (
 	FreeEndpoint = "https://api-free.deepl.com/v2/"
 )
 
-type Client struct {
+type client struct {
 	Endpoint string
 	AuthKey  string
 	client   *http.Client
 }
 
-func NewClient(authKey string) *Client {
-	return &Client{
+func NewClient(authKey string) Client {
+	return &client{
 		Endpoint: DetermineEndpoint(authKey),
 		AuthKey:  authKey,
 		client:   http.DefaultClient,
@@ -40,7 +42,7 @@ type TranslateResponse struct {
 }
 
 // TranslateToString is a helper which calls Translate and concatenates the result in to a single string
-func (c *Client) TranslateToString(text string, targetLang string, sourceLang string) (string, error) {
+func (c *client) TranslateToString(text, targetLang, sourceLang string) (string, error) {
 	s, err := c.Translate(text, targetLang, sourceLang)
 	if err != nil {
 		return "", err
@@ -56,7 +58,7 @@ func (c *Client) TranslateToString(text string, targetLang string, sourceLang st
 	return sb.String(), nil
 }
 
-func (c *Client) Translate(text string, targetLang string, sourceLang string) ([]string, error) {
+func (c *client) Translate(text string, targetLang string, sourceLang string) ([]string, error) {
 	params := url.Values{}
 	params.Add("auth_key", c.AuthKey)
 	params.Add("target_lang", targetLang)
@@ -92,7 +94,7 @@ type SupportedLanguage struct {
 
 // GetSupportedLanguages returns the list of supported source languages if target is set to false. Otherwise,
 // the supported target languages are returned.
-func (c *Client) GetSupportedLanguages(target bool) (map[string]SupportedLanguage, error) {
+func (c *client) GetSupportedLanguages(target bool) (map[string]SupportedLanguage, error) {
 	ep := c.Endpoint + "languages"
 	params := url.Values{}
 	params.Add("auth_key", c.AuthKey)
