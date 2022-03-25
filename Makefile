@@ -1,13 +1,19 @@
+VERSION := $(shell git describe --tags --dirty --always)
+LDFLAGS = -ldflags "-X main.Version=${VERSION}"
+
+build:
+	CGO_ENABLED=0 go build ${LDFLAGS} .
+
 build_all: bin/w2d-amd64-linux bin/w2d-amd64-darwin bin/w2d-amd64-windows.exe
 
 bin/w2d-amd64-linux:
-	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o bin/w2d-amd64-linux main.go
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build ${LDFLAGS} -o bin/w2d-amd64-linux main.go
 
 bin/w2d-amd64-darwin:
-	CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -o bin/w2d-amd64-darwin main.go
+	CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build ${LDFLAGS} -o bin/w2d-amd64-darwin main.go
 
 bin/w2d-amd64-windows.exe:
-	CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -o bin/w2d-amd64-windows.exe main.go
+	CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build ${LDFLAGS} -o bin/w2d-amd64-windows.exe main.go
 
 .PHONY: test
 test:

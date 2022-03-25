@@ -24,6 +24,12 @@ func (rootArgs) Description() string {
 	return "Converts a wikipedia article to markdown and translates it using the DeepL.com api.\n"
 }
 
+var Version string
+
+func (rootArgs) Version() string {
+	return Version
+}
+
 type authKey struct {
 	DeeplAuthKey string `arg:"required,-k,--,env:W2D_DEEPL_AUTH_KEY"`
 }
