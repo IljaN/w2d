@@ -73,7 +73,7 @@ func (c *client) Translate(text string, targetLang string, sourceLang string) ([
 	if err := ValidateResponse(resp); err != nil {
 		return []string{}, err
 	}
-	parsed, err := ParseTranslateResponse(resp)
+	parsed, err := parseResponse[TranslateResponse](resp)
 	if err != nil {
 		return []string{}, err
 	}
@@ -109,7 +109,7 @@ func (c *client) GetSupportedLanguages(target bool) (map[string]SupportedLanguag
 		return nil, err
 	}
 
-	parsed, err := ParseLanguagesResponse(resp)
+	parsed, err := parseResponse[SupportedLanguageResponse](resp)
 	if err != nil {
 		return nil, err
 	}
@@ -154,36 +154,21 @@ func ValidateResponse(resp *http.Response) error {
 	return nil
 }
 
-func ParseLanguagesResponse(resp *http.Response) (SupportedLanguageResponse, error) {
-	var responseJson SupportedLanguageResponse
+// parseResponse parses json response in to target type R
+func parseResponse[R any](resp *http.Response) (R, error) {
+	var parsed R
 	body, err := ioutil.ReadAll(resp.Body)
 
 	if err != nil {
 		err := fmt.Errorf("%s (occurred while parse response)", err.Error())
-		return responseJson, err
+		return parsed, err
 	}
-	err = json.Unmarshal(body, &responseJson)
+	err = json.Unmarshal(body, &parsed)
 	if err != nil {
 		err := fmt.Errorf("%s (occurred while parse response)", err.Error())
-		return responseJson, err
+		return parsed, err
 	}
-	return responseJson, err
-}
-
-func ParseTranslateResponse(resp *http.Response) (TranslateResponse, error) {
-	var responseJson TranslateResponse
-	body, err := ioutil.ReadAll(resp.Body)
-
-	if err != nil {
-		err := fmt.Errorf("%s (occurred while parse response)", err.Error())
-		return responseJson, err
-	}
-	err = json.Unmarshal(body, &responseJson)
-	if err != nil {
-		err := fmt.Errorf("%s (occurred while parse response)", err.Error())
-		return responseJson, err
-	}
-	return responseJson, err
+	return parsed, err
 }
 
 func DetermineEndpoint(authKey string) string {

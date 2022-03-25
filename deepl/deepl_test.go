@@ -42,8 +42,7 @@ func TestValidateResponse(t *testing.T) {
 			continue
 		}
 		if err == nil {
-			t.Fatalf("If Status code is not 200 <= c < 300, should occur error\nStatus code: %d, Response: %v",
-				c, testResponse)
+			t.Fatalf("If Status code is not 200 <= c < 300, should occur error\nStatus code: %d, Response: %v", c, testResponse)
 		} else {
 			if !strings.Contains(err.Error(), http.StatusText(c)) {
 				errorText = fmt.Sprintf("Error text should include Status Code(%s)\nActual: %s",
@@ -108,7 +107,7 @@ func TestParseResponse(t *testing.T) {
 			t.Fatal("Error within json.Marshal")
 		}
 		baseResponse.Body = ioutil.NopCloser(bytes.NewBuffer(b))
-		res, err := ParseTranslateResponse(&baseResponse)
+		res, err := parseResponse[TranslateResponse](&baseResponse)
 		if err != nil {
 			t.Fatalf("If input is valid, should not occur error\n%s", err.Error())
 		}
@@ -133,7 +132,7 @@ func TestParseResponse(t *testing.T) {
 			t.Fatal("Error within json.Marshal")
 		}
 		baseResponse.Body = ioutil.NopCloser(bytes.NewBuffer(b))
-		res, err := ParseTranslateResponse(&baseResponse)
+		res, err := parseResponse[TranslateResponse](&baseResponse)
 		if err != nil {
 			t.Fatalf("If input is valid, should not occur error\n%s", err.Error())
 		}
