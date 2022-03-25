@@ -31,7 +31,9 @@ func (p *ArticleParser) Parse(html io.ReadCloser) (string, error) {
 		return "", err
 	}
 	title := doc.Find("h1#firstHeading")
-	sb.WriteString("# " + title.Text() + "\n\n")
+	if title.Text() != "" {
+		sb.WriteString("# " + title.Text() + "\n\n")
+	}
 
 	articleStart := doc.Find("div.mw-parser-output").ChildrenFiltered("h2,p,ul")
 	articleStart.EachWithBreak(func(i int, selection *goquery.Selection) bool {
