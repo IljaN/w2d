@@ -199,6 +199,7 @@ func TestTranslatePassesAllParams(t *testing.T) {
 	}
 
 	_, _ = c.Translate("Hallo Welt!", "ru", "")
+	_, _ = c.TranslateToString("Hallo Welt!", "ru", "")
 
 }
 
