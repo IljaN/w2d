@@ -9,10 +9,19 @@ import (
 	"strings"
 )
 
+// Client for the DeepL.com translation API. See: https://www.deepl.com/en/docs-api/
+//
+// To access the API an AuthKey is required which can be obtained by creating "DeepL.com API account" (Free or Pro) at
+// https://www.deepl.com/pro . The Client only covers a subset of all supported API functionality.
 type Client interface {
-	Translate(text string, sourceLang string, targetLang string) ([]string, error)
+	// Translate the given text from sourceLang to targetLang. Set sourceLang to "" (empty-string) to use automatic source-
+	// language detection. Use the SupportedLanguages method to query possible values for targetLang and sourceLang.
+	Translate(text, targetLang, sourceLang string) ([]string, error)
+	// TranslateToString same as Translate but returns the concatenated text
 	TranslateToString(text, targetLang, sourceLang string) (string, error)
-	GetSupportedLanguages(target bool) (map[string]SupportedLanguage, error)
+	// SupportedLanguages returns the list of supported source languages if target is set to false. Otherwise,
+	// the supported target languages are returned.
+	SupportedLanguages(target bool) (map[string]SupportedLanguage, error)
 }
 
 const (
@@ -58,7 +67,9 @@ func (c *client) TranslateToString(text, targetLang, sourceLang string) (string,
 	return sb.String(), nil
 }
 
-func (c *client) Translate(text string, targetLang string, sourceLang string) ([]string, error) {
+// Translate the given text from sourceLang to targetLang. Set sourceLang to "" (empty-string) to use automatic source-
+// language detection. Use the SupportedLanguages method to query possible values for targetLang and sourceLang.
+func (c *client) Translate(text, targetLang, sourceLang string) ([]string, error) {
 	params := url.Values{}
 	params.Add("auth_key", c.AuthKey)
 	params.Add("target_lang", targetLang)
@@ -70,7 +81,7 @@ func (c *client) Translate(text string, targetLang string, sourceLang string) ([
 	ep := c.Endpoint + "translate"
 	resp, err := c.client.PostForm(ep, params)
 
-	if err := ValidateResponse(resp); err != nil {
+	if err := validateResponse(resp); err != nil {
 		return []string{}, err
 	}
 	parsed, err := parseResponse[TranslateResponse](resp)
@@ -92,9 +103,9 @@ type SupportedLanguage struct {
 	SupportsFormality bool   `json:"supports_formality"`
 }
 
-// GetSupportedLanguages returns the list of supported source languages if target is set to false. Otherwise,
+// SupportedLanguages returns the list of supported source languages if target is set to false. Otherwise,
 // the supported target languages are returned.
-func (c *client) GetSupportedLanguages(target bool) (map[string]SupportedLanguage, error) {
+func (c *client) SupportedLanguages(target bool) (map[string]SupportedLanguage, error) {
 	ep := c.Endpoint + "languages"
 	params := url.Values{}
 	params.Add("auth_key", c.AuthKey)
@@ -105,7 +116,7 @@ func (c *client) GetSupportedLanguages(target bool) (map[string]SupportedLanguag
 
 	resp, err := c.client.PostForm(ep, params)
 
-	if err := ValidateResponse(resp); err != nil {
+	if err := validateResponse(resp); err != nil {
 		return nil, err
 	}
 
@@ -135,7 +146,7 @@ var KnownErrors = map[int]string{
 	529: "Too many requests. Please wait and resend your request.",
 } // this from https://www.deepl.com/docs-api/accessing-the-api/error-handling/
 
-func ValidateResponse(resp *http.Response) error {
+func validateResponse(resp *http.Response) error {
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		var data map[string]interface{}
 		baseErrorText := fmt.Sprintf("Invalid response [%d %s]",
@@ -171,6 +182,7 @@ func parseResponse[R any](resp *http.Response) (R, error) {
 	return parsed, err
 }
 
+// DetermineEndpoint returns the base api-endpoint depending on whether authKey belongs to a free or pro account.
 func DetermineEndpoint(authKey string) string {
 	if strings.HasSuffix(authKey, ":fx") {
 		return FreeEndpoint

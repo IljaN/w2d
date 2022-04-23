@@ -87,7 +87,7 @@ func newListLanguagesCmd(deepl deepl.Client) func(langType string) (string, erro
 			return "", fmt.Errorf("invalid target: %s\n", langType)
 		}
 
-		langs, err := deepl.GetSupportedLanguages(langType != "source")
+		langs, err := deepl.SupportedLanguages(langType != "source")
 		if err != nil {
 			return "", err
 		}

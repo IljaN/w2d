@@ -33,7 +33,7 @@ func TestValidateResponse(t *testing.T) {
 		}
 		testResponse.Status = fmt.Sprintf("%d test", c)
 		testResponse.StatusCode = c
-		err := ValidateResponse(&testResponse)
+		err := validateResponse(&testResponse)
 		if c >= 200 && c < 300 {
 			errorText = "If status code is between 200 and 299, no error should be returned"
 			if err != nil {
@@ -63,7 +63,7 @@ func TestValidateResponse(t *testing.T) {
 		StatusCode: 444,
 		Body:       ioutil.NopCloser(bytes.NewBuffer([]byte("test"))),
 	}
-	err = ValidateResponse(&invalidResp)
+	err = validateResponse(&invalidResp)
 	if err == nil {
 		t.Fatalf("If status code is invalid, should occur error\nActual: %d", invalidResp.StatusCode)
 	} else if !strings.HasSuffix(err.Error(), "]") {
@@ -77,7 +77,7 @@ func TestValidateResponse(t *testing.T) {
 		StatusCode: 444,
 		Body:       ioutil.NopCloser(bytes.NewBuffer([]byte(fmt.Sprintf(`{"message": "%s"}`, expectedMessage)))),
 	}
-	err = ValidateResponse(&validResp)
+	err = validateResponse(&validResp)
 	if err == nil {
 		t.Fatalf("If is status code invalid, should occur error\nActual: %d", validResp.StatusCode)
 	} else if !strings.HasSuffix(err.Error(), expectedMessage) {
