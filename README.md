@@ -1,5 +1,10 @@
 # w2d
-CLI-Tool to convert wikipedia articles to markdown and translate them using DeepL
+Cli-Tool to convert wikipedia articles to markdown and translates them using DeepL. 
+
+## Use-Cases
+- Read an article in multiple languages to get new perspectives on a topic
+- Send translated wikipedia articles to friends where a topic is not available in their language
+- Read wikipedia articles in your terminal
 
 ## Requirements
 To use the translation functionality you need to [register](https://www.deepl.com/de/pro#developer) a (free) DeepL.com developer account to get an "Auth-Key" for the translate api.
@@ -7,11 +12,11 @@ To use the translation functionality you need to [register](https://www.deepl.co
 ## Examples
 
 ### Translation
-Converts a wikipedia article to markdown and translate it
+Converts a Wikipedia article to markdown and translate it
 ```shell
 $ export W2D_DEEPL_AUTH_KEY=aaaa-bbb-ccc
 
-# Convert german article to markdown and translates it russian. Output is always printed to stdout.
+# Convert german article to markdown and translates it to russian. Output is always printed to stdout.
 $ w2d translate ru https://de.wikipedia.org/wiki/Warentrenner > warentrenner_ru.md
 
 # You can also pass a source-language in case auto-detection by DeepL.com fails
@@ -25,9 +30,20 @@ $ wget -q https://en.wikipedia.org/wiki/Hearth -O - | ./w2d translate it -
 ```
 
 ### Convert only
-Render article as markdown without translating it. No DeepL API-Key is required for this use-case.
+Convert articles to markdown without translating. No DeepL API-Key is required for these use-cases.
+
+#### Read Wikipedia in your terminal
 ```shell
-# Download and convert an article to markdown
+# Use glow to render and beautify markdown in your terminal
+$ w2d markdown https://en.wikipedia.org/wiki/Hearth | glow -p 
+
+# Or simply use less..
+$ w2d markdown https://en.wikipedia.org/wiki/Hearth | less -r 
+```
+
+#### Work with articles on disk
+```shell
+# Convert and store an article as markdown
 $ w2d markdown https://en.wikipedia.org/wiki/Hearth > hearth_en.md
 
 # Convert article (html) stored on disk
