@@ -1,7 +1,7 @@
 # w2d
 Cli-Tool to convert wikipedia articles to markdown and translates them using DeepL. 
 
-## Use-Cases
+## Why?
 - Read an article in multiple languages to get new perspectives on a topic
 - Send translated wikipedia articles to friends where a topic is not available in their language
 - Read wikipedia articles in your terminal
