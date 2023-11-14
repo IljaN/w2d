@@ -7,7 +7,7 @@ require (
 	github.com/PuerkitoBio/goquery v1.8.0
 	github.com/alexflint/go-arg v1.4.3
 	github.com/stretchr/testify v1.7.0
-	golang.org/x/net v0.7.0
+	golang.org/x/net v0.17.0
 )
 
 require (
